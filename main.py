@@ -93,7 +93,7 @@ def fromGDrivetoUSB(url:str):
     if dzip.endswith(".zip"):
         fromZiptoUSB(dzip)
     else:
-        os.remove(dzip)
+        SaveSitting(dzip)
         input("\033[0;31mThe Link Is Not For a Save.")
 
 def format(usbdata:list):
