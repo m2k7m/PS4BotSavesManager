@@ -1,14 +1,19 @@
-import zipfile,os,shutil,gdown
+import zipfile,os,shutil,gdown,time
 
 def CheckUSB():
-    Usb = os.popen("wmic logicaldisk where drivetype=2 get deviceid").read()
-    if Usb.find("DeviceID") != -1:
-        N1 = Usb.split(":")[0].split("\n")[2]
+    usb = os.popen("wmic logicaldisk where drivetype=2 get deviceid").read()
+    if usb.find("DeviceID") != -1:
+        N1 = usb.split(":")[0].split("\n")[2]
         return N1 + ":"
     else:
-        print("\033[0;31mThere's No USB")
-        input("")
-        exit()
+        os.system('cls' if os.name=='nt' else 'clear')
+        print("\033[0;31mThere's No USB, Waiting for a USB ...")
+        while True:
+            usb = os.popen("wmic logicaldisk where drivetype=2 get deviceid").read()
+            if usb.find("DeviceID") != -1:
+                N1 = usb.split(":")[0].split("\n")[2]
+                return N1 + ":"
+            time.sleep(5)
 
 def fromZiptoUSB(zipname:str):
     check = CheckUSB()
@@ -39,18 +44,17 @@ def fromGDrivetoUSB(url:str):
     if dzip.endswith(".zip"):
         fromZiptoUSB(dzip)
     else:
-        print("\033[0;31mThe Link Is Not For a Save.")
         os.remove(dzip)
-        input("")
-        exit()
+        input("\033[0;31mThe Link Is Not For a Save.")
 
 def main():
     os.system('cls' if os.name=='nt' else 'clear')
     check = CheckUSB()
-    print(f"\033[32mUSB Found {check} \033[0m")
-    Value = input("Input a Value: ")
     if check:
-        if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com/download?id="): 
+        os.system('cls' if os.name=='nt' else 'clear')
+        print(f"\033[32mUSB Found {check} \033[0m")
+        Value = input("Input a Value: ")
+        if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com"): 
             fromGDrivetoUSB(Value)
         if Value.endswith(".zip"):
             fromZiptoUSB(Value)
