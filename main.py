@@ -1,22 +1,66 @@
-import zipfile,os,shutil,gdown,time
+import zipfile,os,shutil,gdown,time,json
+
+if os.path.exists('config.json'):
+    with open('config.json', 'r') as f:
+        config = json.load(f)
+else:
+    config = {}
+
+def SaveSitting(zipname:str = None):
+    if not os.path.exists('config.json') or zipname=="save":
+        sit = input("Do You Want Keep ZIP Files? (T or F):")
+        if sit.upper() == "T":
+            config["Save"] = True
+        elif sit.upper() == "F":
+            config["Save"] = False
+        with open("config.json", "w") as f:
+            json.dump(config, f,indent=4)
+        main()
+    for save,value in config.items():
+        if value is False and zipname:
+            os.remove(zipname)
+            print(f"\033[32m{zipname} Removed Successfully.\033[0m")
+
+def filterNumbers(num):
+    if num == 0 :
+        return num + 1
+    if (num % 2) == 0: 
+        return num + 1
 
 def CheckUSB():
     usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid").read()
     if usb.find("DeviceID") != -1:
-        usb_letter = usb.split("\n")[2].split(" ")[0]
-        usb_system = usb.split("\n")[2].split(" ")[8]
-        usb_name = usb.split("\n")[2].split(" ")[15]
-        return usb_letter,usb_system,usb_name
+        if usb.split("\n")[4]:
+            Number = input("USB Number(Defult Is The First USB): ")
+            if Number == "":
+                Number = 0
+            elif not Number.isdigit():
+                print(f"{Number} Is Not a Number Please Try Again")
+                Number = 0
+                CheckUSB()
+            else:
+                Number =int(Number)
+        else:
+            Number = 0
+
+        if filterNumbers(Number):
+            Number = filterNumbers(Number)
+
+        nusb = usb.split("\n")[Number + 1 ]
+        letter = nusb.split(" ")[0]
+        system = nusb.split(" ")[8]
+        name = nusb.split(" ")[15]
+        return letter,system,name
     else:
         os.system('cls' if os.name=='nt' else 'clear')
         print("\033[0;31mThere's No USB, Waiting for a USB ...")
         while True:
             usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid").read()
             if usb.find("DeviceID") != -1:
-                usb_letter = usb.split("\n")[2].split(" ")[0]
-                usb_system = usb.split("\n")[2].split(" ")[8]
-                usb_name = usb.split("\n")[2].split(" ")[15]
-                return usb_letter,usb_system,usb_name
+                letter = usb.split("\n")[2].split(" ")[0]
+                system = usb.split("\n")[2].split(" ")[8]
+                name = usb.split("\n")[2].split(" ")[15]
+                return letter,system,name
             time.sleep(5)
 
 def fromZiptoUSB(zipname:str):
@@ -31,7 +75,8 @@ def fromZiptoUSB(zipname:str):
                 newzip.extractall(check[0])
                 shutil.copytree(check[0] + newzip.filelist[0].filename,check[0],dirs_exist_ok=True)
                 shutil.rmtree(check[0] + newzip.filelist[0].filename)
-                print(f"\033[32mI Moved Your Save To {check[2]}, Enjoy <3")
+                print(f"\033[32mYour Save Moved To {check[2]}, Enjoy <3")
+        SaveSitting(zipname)
 
 def fromGDrivetoUSB(url:str):
     if url.startswith("https://drive.google.com/file/d/"):
@@ -51,8 +96,17 @@ def fromGDrivetoUSB(url:str):
         os.remove(dzip)
         input("\033[0;31mThe Link Is Not For a Save.")
 
+def format(usbdata:list):
+    cmd = f"format {usbdata[0]} /FS:{usbdata[1]} /Q /V:{usbdata[2]} /y"
+    os.system(cmd)
+    os.system('cls' if os.name=='nt' else 'clear')
+    print(f"\033[32m{usbdata[2]} Has Been Formatted Successfully\033[0m")
+    time.sleep(3)
+    main()
+
 def main():
     os.system('cls' if os.name=='nt' else 'clear')
+    SaveSitting()
     check = CheckUSB()
     if check:
         os.system('cls' if os.name=='nt' else 'clear')
@@ -62,5 +116,11 @@ def main():
             fromGDrivetoUSB(Value)
         if Value.endswith(".zip"):
             fromZiptoUSB(Value)
+        if Value.lower() == "format":
+            format(check)
+        if Value.lower() == "change":
+            main()
+        if Value.lower() == "save":
+            SaveSitting("save")
 
 main()
