@@ -14,6 +14,7 @@ def fromZiptoUSB(zipname:str):
     check = CheckUSB()
     if check:
         with zipfile.ZipFile(zipname) as newzip:
+            print(f"\033[32mPrepareing {zipname} ...\033[0m")
             if newzip.filelist[0].filename.startswith("PS4/"):
                 newzip.extractall(check)
                 print("\033[32mYour PS4 Save Is Ready, Enjoy <3")
@@ -29,9 +30,11 @@ def fromGDrivetoUSB(url:str):
             file_id = url.split("/d/")[1].split("/")[0]
         else:
             file_id = url.split("/d/")[1]
-    elif url.startswith("https://drive.google.com/uc?id="):
+    elif url.startswith("https://drive.google.com/uc?id=") or url.startswith("https://drive.usercontent.google.com/download?id="):
         file_id = url.split("=")[1].split("&")[0]
-    
+    elif "folders" in url:
+        return input("\033[0;31mSorry, It Should Be ZIP File.")
+    print("\033[32mWaiting For Download ...\033[0m")
     dzip = gdown.download("https://docs.google.com/uc?export=download&id=" + file_id)
     if dzip.endswith(".zip"):
         fromZiptoUSB(dzip)
@@ -42,15 +45,14 @@ def fromGDrivetoUSB(url:str):
         exit()
 
 def main():
+    os.system('cls' if os.name=='nt' else 'clear')
     check = CheckUSB()
     print(f"\033[32mUSB Found {check} \033[0m")
-    start = input("Input a Value: ")
+    Value = input("Input a Value: ")
     if check:
-        if start.startswith("https://drive.google.com"):  
-            print("\033[32mWaiting For Download ...\033[0m")
-            fromGDrivetoUSB(start)
-        if start.endswith(".zip"):
-            print(f"\033[32mPrepareing {start} ...\033[0m")
-            fromZiptoUSB(start)
+        if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com/download?id="): 
+            fromGDrivetoUSB(Value)
+        if Value.endswith(".zip"):
+            fromZiptoUSB(Value)
 
 main()
