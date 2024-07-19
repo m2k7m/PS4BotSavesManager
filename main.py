@@ -194,6 +194,7 @@ def main():
         elif AutoCorrection(Value.lower()) == "savesettings":
             SaveSitting("save")
         else:
-            print(f"USB: {check[2]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings")
+            input(f"USB: {check[2]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings\n\nPress any key to continue ...")
+            main()
             
 main()
