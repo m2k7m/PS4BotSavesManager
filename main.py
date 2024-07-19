@@ -97,6 +97,10 @@ def fromGDrivetoUSB(url:str):
         input("\033[0;31mThe Link Is Not For a Save.")
 
 def format(usbdata:list):
+    check = USBFiles(usbdata[0])
+    if not check:
+        time.sleep(3)
+        main()
     cmd = f"format {usbdata[0]} /FS:{usbdata[1]} /Q /V:{usbdata[2]} /y"
     os.system(cmd)
     os.system('cls' if os.name=='nt' else 'clear')
@@ -104,23 +108,65 @@ def format(usbdata:list):
     time.sleep(3)
     main()
 
+def USBFiles(usbletter: str):
+    files = os.listdir(usbletter)
+    if files == ['System Volume Information']:
+        return print("\033[0;31mThere are no files in the USB.")
+    files.remove("System Volume Information")
+    return files
+
+def AutoCorrection(Word:str,database={"format","changeusb","savesettings"},simlimit:int = 0.4):
+    def createBigram(word:str):
+        return [word[i] + word[i+1] for i in range(len(word)-1)]
+
+    def getSim(FirstWord:str,SecondWord:str):
+        FirstWord,SecondWord = FirstWord.lower(),SecondWord.lower()
+
+        Sim = []
+        FirstBigram,SecondBigram = createBigram(FirstWord),createBigram(SecondWord)
+
+        for i in range(len(FirstBigram)):
+            try:
+                SecondBigram.index(FirstBigram[i])
+                Sim.append(FirstBigram[i])
+            except:
+                continue
+
+        return len(Sim)/max(len(FirstBigram),len(SecondBigram))
+    
+    max_sim = 0.0
+
+    for data_word in database:
+        cur_sim = getSim(Word,data_word)
+        if cur_sim > max_sim:
+            max_sim = cur_sim
+            most_sim_word = data_word
+    
+    return most_sim_word if max_sim>simlimit else Word
+
 def main():
     os.system('cls' if os.name=='nt' else 'clear')
     SaveSitting()
     check = CheckUSB()
     if check:
+        fi = USBFiles(check[0])
         os.system('cls' if os.name=='nt' else 'clear')
-        print(f"\033[32mUSB Found {check[2]} \033[0m")
+        print(f"\033[32mUSB Found {check[2]}\033[0m")
+        if fi:
+            if len(fi) == 1:
+                print(f"\033[32mFound {len(fi)} File In {check[2]}\033[0m")
+            else:
+                print(f"\033[32mFound {len(fi)} Files In {check[2]}\033[0m")
         Value = input("Input a Value: ")
         if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com"): 
             fromGDrivetoUSB(Value)
         if Value.endswith(".zip"):
             fromZiptoUSB(Value)
-        if Value.lower() == "format":
+        if AutoCorrection(Value.lower()) == "format":
             format(check)
-        if Value.lower() == "change":
+        if AutoCorrection(Value.lower()) == "changeusb":
             main()
-        if Value.lower() == "save":
+        if AutoCorrection(Value.lower()) == "savesettings":
             SaveSitting("save")
-
+            
 main()
