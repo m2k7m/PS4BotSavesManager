@@ -1,5 +1,7 @@
 import zipfile,os,shutil,gdown,time,json
 
+USBdata={}
+
 if os.path.exists('config.json'):
     with open('config.json', 'r') as f:
         config = json.load(f)
@@ -8,26 +10,36 @@ else:
 
 def SaveSitting(zipname:str = None):
     if not os.path.exists('config.json') or zipname=="save":
-        sit = input("Do You Want Keep ZIP Files? (T or F):")
+        sit = input("Do You Want Keep ZIP Files? (T or F): ")
         if sit.upper() == "T":
             config["Save"] = True
         elif sit.upper() == "F":
             config["Save"] = False
         with open("config.json", "w") as f:
             json.dump(config, f,indent=4)
+        zipname=None
         main()
     for save,value in config.items():
         if value is False and zipname:
             os.remove(zipname)
-            print(f"\033[32m{zipname} Removed Successfully.\033[0m")
+            print(f"\033[0;31m{zipname}\033[32m Removed Successfully.\033[0m")
 
 def filterNumbers(num):
     if num == 0 :
         return num + 1
-    if (num % 2) == 0: 
+    elif (num % 2) == 0: 
         return num + 1
+    else:
+        return num
 
 def CheckUSB():
+    if USBdata:
+        for usb,data in USBdata.items():
+            letter = data['letter']
+            system = data['system']
+            name = data['name']
+            print(f"\033[32mPrepareing {name} USB ...\033[0m")
+            return letter,system,name
     usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid").read()
     if usb.find("DeviceID") != -1:
         if usb.split("\n")[4]:
@@ -35,22 +47,28 @@ def CheckUSB():
             if Number == "":
                 Number = 0
             elif not Number.isdigit():
-                print(f"{Number} Is Not a Number Please Try Again")
+                print(f"\033[0;31m{Number} Is Not a Number Please Try Again\033[0m")
                 Number = 0
                 CheckUSB()
             else:
                 Number =int(Number)
         else:
             Number = 0
-
-        if filterNumbers(Number):
-            Number = filterNumbers(Number)
-
-        nusb = usb.split("\n")[Number + 1 ]
-        letter = nusb.split(" ")[0]
-        system = nusb.split(" ")[8]
-        name = nusb.split(" ")[15]
-        return letter,system,name
+        Number = filterNumbers(Number)
+        try:
+            nusb = usb.split("\n")[Number + 1 ]
+            letter = nusb.split(" ")[0]
+            system = nusb.split(" ")[8]
+            name = nusb.split(" ")[15]
+            USBdata["USB"] = {
+                "letter": letter,
+                "system": system,
+                "name":name
+            }
+            return letter,system,name
+        except IndexError:
+            print(f"\033[0;31mThere's No {Number}th USB, Please Try Again\033[0m")
+            CheckUSB()
     else:
         os.system('cls' if os.name=='nt' else 'clear')
         print("\033[0;31mThere's No USB, Waiting for a USB ...")
@@ -60,6 +78,11 @@ def CheckUSB():
                 letter = usb.split("\n")[2].split(" ")[0]
                 system = usb.split("\n")[2].split(" ")[8]
                 name = usb.split("\n")[2].split(" ")[15]
+                USBdata["USB"] = {
+                    "letter": letter,
+                    "system": system,
+                    "name":name
+                }
                 return letter,system,name
             time.sleep(5)
 
@@ -111,7 +134,7 @@ def format(usbdata:list):
 def USBFiles(usbletter: str):
     files = os.listdir(usbletter)
     if files == ['System Volume Information']:
-        return print("\033[0;31mThere are no files in the USB.")
+        return print("\033[0;31mThere are no files in the USB.\033[0m")
     files.remove("System Volume Information")
     return files
 
@@ -149,9 +172,9 @@ def main():
     SaveSitting()
     check = CheckUSB()
     if check:
-        fi = USBFiles(check[0])
         os.system('cls' if os.name=='nt' else 'clear')
-        print(f"\033[32mUSB Found {check[2]}\033[0m")
+        print(f"\033[32mFound USB: {check[2]}\033[0m")
+        fi = USBFiles(check[0])
         if fi:
             if len(fi) == 1:
                 print(f"\033[32mFound {len(fi)} File In {check[2]}\033[0m")
