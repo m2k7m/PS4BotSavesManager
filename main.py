@@ -183,13 +183,17 @@ def main():
         Value = input("Input a Value: ")
         if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com"): 
             fromGDrivetoUSB(Value)
-        if Value.endswith(".zip"):
+        elif Value.endswith(".zip"):
             fromZiptoUSB(Value)
-        if AutoCorrection(Value.lower()) == "format":
+        elif AutoCorrection(Value.lower()) == "format":
             format(check)
-        if AutoCorrection(Value.lower()) == "changeusb":
+        elif AutoCorrection(Value.lower()) == "changeusb":
+            global USBdata
+            USBdata = {}
             main()
-        if AutoCorrection(Value.lower()) == "savesettings":
+        elif AutoCorrection(Value.lower()) == "savesettings":
             SaveSitting("save")
+        else:
+            print(f"USB: {check[2]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings")
             
 main()
