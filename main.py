@@ -8,7 +8,10 @@ if os.path.exists('config.json'):
 else:
     config = {}
 
+second_run = False
+
 def SaveSitting(zipname:str = None):
+    global second_run
     if not os.path.exists('config.json') or zipname=="save":
         sit = input("Do You Want Keep ZIP Files? (T or F): ")
         if sit.upper() == "T":
@@ -18,19 +21,13 @@ def SaveSitting(zipname:str = None):
         with open("config.json", "w") as f:
             json.dump(config, f,indent=4)
         zipname=None
+    if config["Save"] is False and zipname:
+        os.remove(zipname)
+        print(f"\033[0;31m{zipname}\033[32m Removed Successfully.\033[0m")
+    if second_run==True:
+        input("Anything Else? ")
+        second_run = False
         main()
-    for save,value in config.items():
-        if value is False and zipname:
-            os.remove(zipname)
-            print(f"\033[0;31m{zipname}\033[32m Removed Successfully.\033[0m")
-
-def filterNumbers(num):
-    if num == 0 :
-        return num + 1
-    elif (num % 2) == 0: 
-        return num + 1
-    else:
-        return num
 
 def CheckUSB():
     if USBdata:
@@ -38,9 +35,10 @@ def CheckUSB():
             letter = data['letter']
             system = data['system']
             name = data['name']
-            print(f"\033[32mPrepareing {name} USB ...\033[0m")
-            return letter,system,name
-    usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid").read()
+            size = data['size']
+            print(f"\033[32mPrepareing {name} - {size} USB ...\033[0m")
+            return letter,system,name,size
+    usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid,Size").read()
     if usb.find("DeviceID") != -1:
         if usb.split("\n")[4]:
             Number = input("USB Number(Defult Is The First USB): ")
@@ -54,18 +52,33 @@ def CheckUSB():
                 Number =int(Number)
         else:
             Number = 0
+        
+        def filterNumbers(num):
+            if num == 0 :
+                return 1
+            elif (num % 2) == 0: 
+                return num + 1
+            else:
+                return num
+        
+        def CalculateDiskSize(bytes):
+            gibibytes = bytes / (1024 * 1024 * 1024)
+            return f"{gibibytes:.2f} GB"
+        
         Number = filterNumbers(Number)
         try:
             nusb = usb.split("\n")[Number + 1 ]
             letter = nusb.split(" ")[0]
             system = nusb.split(" ")[8]
-            name = nusb.split(" ")[15]
+            size = CalculateDiskSize(int(nusb.split(" ")[15]))
+            name = nusb.split(" ")[17]
             USBdata["USB"] = {
-                "letter": letter,
-                "system": system,
-                "name":name
-            }
-            return letter,system,name
+                    "letter": letter,
+                    "system": system,
+                    "size":size,
+                    "name":name
+                    }
+            return letter,system,name,size
         except IndexError:
             print(f"\033[0;31mThere's No {Number}th USB, Please Try Again\033[0m")
             CheckUSB()
@@ -73,20 +86,23 @@ def CheckUSB():
         os.system('cls' if os.name=='nt' else 'clear')
         print("\033[0;31mThere's No USB, Waiting for a USB ...")
         while True:
-            usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid").read()
+            usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid,Size").read()
             if usb.find("DeviceID") != -1:
                 letter = usb.split("\n")[2].split(" ")[0]
                 system = usb.split("\n")[2].split(" ")[8]
-                name = usb.split("\n")[2].split(" ")[15]
+                size = CalculateDiskSize(int(usb.split("\n")[2].split(" ")[15]))
+                name = usb.split("\n")[2].split(" ")[17]
                 USBdata["USB"] = {
                     "letter": letter,
                     "system": system,
+                    "size":size,
                     "name":name
-                }
-                return letter,system,name
+                    }
+                return letter,system,name,size
             time.sleep(5)
 
 def fromZiptoUSB(zipname:str):
+    global second_run
     check = CheckUSB()
     if check:
         with zipfile.ZipFile(zipname) as newzip:
@@ -98,7 +114,8 @@ def fromZiptoUSB(zipname:str):
                 newzip.extractall(check[0])
                 shutil.copytree(check[0] + newzip.filelist[0].filename,check[0],dirs_exist_ok=True)
                 shutil.rmtree(check[0] + newzip.filelist[0].filename)
-                print(f"\033[32mYour Save Moved To {check[2]}, Enjoy <3")
+                print(f"\033[32mYour Save Moved To {check[2]} - {check[3]}, Enjoy <3")
+        second_run = True
         SaveSitting(zipname)
 
 def fromGDrivetoUSB(url:str):
@@ -173,13 +190,13 @@ def main():
     check = CheckUSB()
     if check:
         os.system('cls' if os.name=='nt' else 'clear')
-        print(f"\033[32mFound USB: {check[2]}\033[0m")
+        print(f"\033[32mFound USB: {check[2]} - {check[3]}\033[0m")
         fi = USBFiles(check[0])
         if fi:
             if len(fi) == 1:
-                print(f"\033[32mFound {len(fi)} File In {check[2]}\033[0m")
+                print(f"\033[32mFound {len(fi)} File In {check[2]} - {check[3]}\033[0m")
             else:
-                print(f"\033[32mFound {len(fi)} Files In {check[2]}\033[0m")
+                print(f"\033[32mFound {len(fi)} Files In {check[2]} - {check[3]}\033[0m")
         Value = input("Input a Value: ")
         if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com"): 
             fromGDrivetoUSB(Value)
@@ -194,7 +211,7 @@ def main():
         elif AutoCorrection(Value.lower()) == "savesettings":
             SaveSitting("save")
         else:
-            input(f"USB: {check[2]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings\n\nPress any key to continue ...")
+            input(f"USB: {check[2]} - {check[3]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings\n\nPress any key to continue ...")
             main()
             
 main()
