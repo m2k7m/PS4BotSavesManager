@@ -1,4 +1,10 @@
-import zipfile,os,shutil,gdown,time,json
+
+import zipfile
+import os
+import shutil
+import gdown
+import time
+import json
 
 USBdata={}
 
@@ -12,19 +18,21 @@ second_run = False
 
 def SaveSitting(zipname:str = None):
     global second_run
-    if not os.path.exists('config.json') or zipname=="save":
-        sit = input("Do You Want Keep ZIP Files? (T or F): ")
-        if sit.upper() == "T":
+    if not os.path.exists('config.json') or zipname == "save":
+        sit = input("Do You Want Keep ZIP Files? (Y or N): ")
+        if sit.upper() == "Y":
             config["Save"] = True
-        elif sit.upper() == "F":
+        elif sit.upper() == "N":
             config["Save"] = False
+    
         with open("config.json", "w") as f:
             json.dump(config, f,indent=4)
-        zipname=None
-    if config["Save"] is False and zipname:
+    
+    elif config["Save"] is False and zipname:
         os.remove(zipname)
         print(f"\033[0;31m{zipname}\033[32m Removed Successfully.\033[0m")
-    if second_run==True:
+    
+    elif second_run == True:
         input("Anything Else? ")
         second_run = False
         main()
@@ -190,14 +198,16 @@ def main():
     check = CheckUSB()
     if check:
         os.system('cls' if os.name=='nt' else 'clear')
+        
         print(f"\033[32mFound USB: {check[2]} - {check[3]}\033[0m")
+
         fi = USBFiles(check[0])
+
         if fi:
-            if len(fi) == 1:
-                print(f"\033[32mFound {len(fi)} File In {check[2]} - {check[3]}\033[0m")
-            else:
-                print(f"\033[32mFound {len(fi)} Files In {check[2]} - {check[3]}\033[0m")
+            print("\033[32mFound {} File{} In {} - {}\033[0m".format(len(fi), "s" if len(fi) != 1 else "", check[2], check[3]))
+        
         Value = input("Input a Value: ")
+
         if Value.startswith("https://drive.google.com") or Value.startswith("https://drive.usercontent.google.com"): 
             fromGDrivetoUSB(Value)
         elif Value.endswith(".zip"):
