@@ -64,7 +64,7 @@ def CheckUSB() -> list:
             print(f"\033[0;31m{Number} Is Not a Number. Please Try Again.\033[0m")
             return CheckUSB()  # Recursively call the function to retry
         else:
-            Number = int(Number)
+            Number = int(Number) - 1
 
         # Validate the selected USB number
         if Number >= len(usb_entries):
