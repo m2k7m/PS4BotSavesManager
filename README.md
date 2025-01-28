@@ -12,7 +12,12 @@ The **PS4BotSaves Manager** is a simple script designed to download saves create
 ## Installation
 
 1. Download the source in ZIP format.
-   or clone it `git clone https://github.com/m2k7m/PS4BotSavesManager.git`
+   or clone it (run the following command).
+
+   ```bash 
+   git clone https://github.com/m2k7m/PS4BotSavesManager.git
+   ```
+
 2. Run the following command to install the required dependencies:
 
    ```bash
