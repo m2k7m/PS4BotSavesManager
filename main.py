@@ -1,4 +1,3 @@
-
 import zipfile
 import shutil
 import time
@@ -8,46 +7,50 @@ import re
 
 USBdata = []
 
-if os.path.exists('config.json'):
-    with open('config.json', 'r') as f:
+if os.path.exists("config.json"):
+    with open("config.json", "r") as f:
         config = json.load(f)
 else:
     config = {}
 
 second_run = False
 
-def SaveSitting(zipname:str = None) -> None:
+
+def SaveSitting(zipname: str = None) -> None:
     global second_run
-    if not os.path.exists('config.json') or zipname == "save":
+    if not os.path.exists("config.json") or zipname == "save":
         sit = input("Do You Want Keep ZIP Files? (Y or N): ")
         if sit.upper() == "Y":
             config["Save"] = True
         elif sit.upper() == "N":
             config["Save"] = False
-    
+
         with open("config.json", "w") as f:
-            json.dump(config, f,indent=4)
-    
+            json.dump(config, f, indent=4)
+
     elif config["Save"] is False and zipname:
         os.remove(zipname)
         print(f"\033[0;31m{zipname}\033[32m Removed Successfully.\033[0m")
-    
+
     if second_run == True:
         input("Anything Else?")
         second_run = False
         main()
 
+
 def CheckUSB() -> list:
     global USBdata
 
     # Fetch USB information using WMIC (Windows Management Instrumentation Command)
-    usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid,Size").read()
+    usb = os.popen(
+        "wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid,Size"
+    ).read()
 
     # Check if any USB is connected
     if usb.find("DeviceID") != -1:
         # Split the output into lines and remove empty strings
         usb_lines = [line.strip() for line in usb.split("\n") if line.strip()]
-        #print(usb_lines)  # Debugging: Print the cleaned lines
+        # print(usb_lines)  # Debugging: Print the cleaned lines
 
         # Extract USB entries
         usb_entries = usb_lines[1:]  # Remaining lines are USB entries
@@ -57,7 +60,7 @@ def CheckUSB() -> list:
             Number = input("USB Number (Default is the first USB): ")
         else:
             Number = 0
-        
+
         if not Number:
             Number = 0
         elif not Number.isdigit():
@@ -87,10 +90,12 @@ def CheckUSB() -> list:
         return USBdata
     else:
         # No USB found, wait for a USB to be connected
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system("cls" if os.name == "nt" else "clear")
         print("\033[0;31mThere's No USB. Waiting for a USB ...\033[0m")
         while True:
-            usb = os.popen("wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid,Size").read()
+            usb = os.popen(
+                "wmic logicaldisk where drivetype=2 get filesystem,volumename,deviceid,Size"
+            ).read()
             if usb.find("DeviceID") != -1:
                 usb_lines = [line.strip() for line in usb.split("\n") if line.strip()]
                 nusb = usb_lines[1].split()
@@ -108,10 +113,12 @@ def CheckUSB() -> list:
                 return USBdata
             time.sleep(5)
 
+
 def CalculateDiskSize(bytes: int) -> str:
     """Convert bytes to a human-readable size format."""
     gibibytes = int(bytes) / (1024 * 1024 * 1024)
     return f"{gibibytes:.2f} GB"
+
 
 def fromZiptoUSB(zipname: str) -> None:
     global second_run
@@ -129,39 +136,49 @@ def fromZiptoUSB(zipname: str) -> None:
             print("\033[32mYour PS4 Save Is Ready, Enjoy <3")
         else:
             newzip.extractall(check[0])
-            shutil.copytree(check[0] + newzip.filelist[0].filename,check[0],dirs_exist_ok=True)
+            shutil.copytree(
+                check[0] + newzip.filelist[0].filename, check[0], dirs_exist_ok=True
+            )
             shutil.rmtree(check[0] + newzip.filelist[0].filename)
             print(f"\033[32mYour Save Moved To {check[2]} - {check[3]}, Enjoy <3")
-    
+
     second_run = True
     SaveSitting(zipname)
+
 
 def fromGDrivetoUSB(url: str) -> None:
     try:
         import gdown
     except ModuleNotFoundError:
-        raise ImportError("The 'gdown' module is not installed. Please install it using 'pip install gdown'.")
+        option = input(
+            "gdown module is not installed. Do you want to install it? [y/n]"
+        )
+        if option == "y":
+            os.system("pip install gdown")
+            fromGDrivetoUSB(url=url)
 
     # Regex pattern to extract file_id from Google Drive URL
-    pattern = re.compile(r'(?:https://drive\.google\.com/file/d/|https://drive\.google\.com/uc\?id=|https://drive\.usercontent\.google\.com/download\?id=)([a-zA-Z0-9_-]+)')
-    
+    pattern = re.compile(
+        r"(?:https://drive\.google\.com/file/d/|https://drive\.google\.com/uc\?id=|https://drive\.usercontent\.google\.com/download\?id=)([a-zA-Z0-9_-]+)"
+    )
+
     match = pattern.search(url)
     if match:
         file_id = match.group(1)
     else:
-        if "folders" in url:
-            raise ValueError("The provided URL is for a folder. Please provide a URL for a ZIP file.")
-        else:
-            raise ValueError("Invalid Google Drive URL. Please provide a valid file URL.")
+        print("Invalid Google Drive URL. Please provide a valid file URL.")
 
     print("\033[32mWaiting For Download ...\033[0m")
-    dzip = gdown.download("https://docs.google.com/uc?export=download&id=" + file_id)
-    
+    dzip = gdown.download(id=file_id)
+
     if dzip.endswith(".zip"):
         fromZiptoUSB(dzip)
     else:
         SaveSitting(dzip)
-        raise ValueError("The downloaded file is not a ZIP file. Please provide a valid ZIP file URL.")
+        print(
+            "The downloaded file is not a ZIP file. Please provide a valid ZIP file URL."
+        )
+
 
 def format(usbdata: list) -> None:
     check = USBFiles(usbdata[0])
@@ -175,8 +192,15 @@ def format(usbdata: list) -> None:
     # Run the command without showing output in the terminal
     try:
         import subprocess
+
         print("\033[32mFormating ...")
-        subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        subprocess.run(
+            cmd,
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
         print(f"{usbdata[2]} Has Been Formatted Successfully\033[0m")
     except subprocess.CalledProcessError as e:
         print(f"\033[0;31mFailed to format {usbdata[2]}. Error: {e}\033[0m")
@@ -184,23 +208,29 @@ def format(usbdata: list) -> None:
     time.sleep(3)
     main()
 
+
 def USBFiles(USB: str) -> int:
     files = os.listdir(USB)
-    if files == ['System Volume Information']:
+    if files == ["System Volume Information"]:
         return print("\033[0;31mThere are no files in the USB.\033[0m")
     files.remove("System Volume Information")
     return len(files)
 
-def AutoCorrection(Word: str, database: dict = {"format", "changeusb", "savesettings"}, simlimit: int = 0.4) -> str:
+
+def AutoCorrection(
+    Word: str,
+    database: dict = {"format", "changeusb", "savesettings"},
+    simlimit: int = 0.4,
+) -> str:
 
     def createBigram(word: str) -> list[str]:
-        return [word[i] + word[i+1] for i in range(len(word)-1)]
+        return [word[i] + word[i + 1] for i in range(len(word) - 1)]
 
     def getSim(FirstWord: str, SecondWord: str) -> float:
-        FirstWord,SecondWord = FirstWord.lower(),SecondWord.lower()
+        FirstWord, SecondWord = FirstWord.lower(), SecondWord.lower()
 
         Sim = []
-        FirstBigram,SecondBigram = createBigram(FirstWord),createBigram(SecondWord)
+        FirstBigram, SecondBigram = createBigram(FirstWord), createBigram(SecondWord)
 
         for i in range(len(FirstBigram)):
             try:
@@ -209,34 +239,39 @@ def AutoCorrection(Word: str, database: dict = {"format", "changeusb", "savesett
             except:
                 continue
 
-        return len(Sim)/max(len(FirstBigram),len(SecondBigram))
-    
+        return len(Sim) / max(len(FirstBigram), len(SecondBigram))
+
     max_sim = 0.0
 
     for data_word in database:
-        cur_sim = getSim(Word,data_word)
+        cur_sim = getSim(Word, data_word)
         if cur_sim > max_sim:
             max_sim = cur_sim
             most_sim_word = data_word
-    
+
     return most_sim_word if max_sim > simlimit else Word
+
 
 def main() -> None:
     SaveSitting()
     check = CheckUSB()
 
-    os.system('cls' if os.name=='nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
     print(f"\033[32mFound USB: {check[2]} - {check[3]}\033[0m")
 
     FilesNumber = USBFiles(check[0])
 
     if FilesNumber:
-        print("\033[32mFound {} File{} In {} - {}\033[0m".format(FilesNumber, "s" if FilesNumber != 1 else "", check[2], check[3]))
-    
+        print(
+            "\033[32mFound {} File{} In {} - {}\033[0m".format(
+                FilesNumber, "s" if FilesNumber != 1 else "", check[2], check[3]
+            )
+        )
+
     Value = input("Input a Value: ")
 
-    if Value.startswith("https"): 
+    if Value.startswith("https"):
         fromGDrivetoUSB(Value)
 
     elif Value.endswith(".zip"):
@@ -254,7 +289,10 @@ def main() -> None:
         SaveSitting("save")
 
     else:
-        input(f"USB: {check[2]} - {check[3]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings\n\nPress any key to continue ...")
+        input(
+            f"USB: {check[2]} - {check[3]}\n\nZIPFile: Move The Saves To {check[2]}.\nGoogleDriveLink: Download And Move Your Save To {check[2]}\nFormat: Format {check[2]}\nChangeUSB: Change From {check[2]} To Any other USBs\nSaveSettings: Changing nSaveSettings\n\nPress any key to continue ..."
+        )
         main()
-            
+
+
 main()
